@@ -1,5 +1,10 @@
 $ErrorActionPreference = "Stop"
-if (-not $env:GH_TOKEN) { throw "Environment variable GH_TOKEN not set! Run: `$env:GH_TOKEN = 'github_pat_...'" }
+
+# Try loading config file first (gitignored, safe)
+$configPath = Join-Path $PSScriptRoot "publish-config.ps1"
+if (Test-Path $configPath) { . $configPath }
+
+if (-not $env:GH_TOKEN) { throw "GH_TOKEN not set! Create publish-config.ps1 or set env var." }
 $token = $env:GH_TOKEN
 $headers = @{ Authorization = "Bearer $token"; Accept = "application/vnd.github.v3+json" }
 $root = "C:\tools\AIChat"

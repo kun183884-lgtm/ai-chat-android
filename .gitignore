@@ -76,3 +76,6 @@ yarn-error.log
 
 # APK files (too large for git, hosted via Releases)
 *.apk
+
+# Local publish config (contains GitHub token)
+publish-config.ps1
