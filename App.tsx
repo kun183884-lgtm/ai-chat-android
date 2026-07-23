@@ -8,17 +8,17 @@ const PROVIDERS = [
   { name: 'DeepSeek', url: 'https://api.deepseek.com/v1', model: 'deepseek-chat', registerUrl: 'https://platform.deepseek.com/signup' },
   { name: '硅基流动', url: 'https://api.siliconflow.cn/v1', model: 'Qwen/Qwen2.5-7B-Instruct', registerUrl: 'https://cloud.siliconflow.cn' },
   { name: '智谱AI', url: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-flash', registerUrl: 'https://open.bigmodel.cn/usercenter/apikeys' },
-  { name: '阿里�?, url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-turbo', registerUrl: 'https://www.aliyun.com/product/bailian' },
-  { name: '自定�?, url: '', model: '' },
+  { name: '阿里云', url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-turbo', registerUrl: 'https://www.aliyun.com/product/bailian' },
+  { name: '自定义', url: '', model: '' },
 ];
 
 const defaultRoles = [
-  { id: '1', name: '通用助手', avatar: '🤖', prompt: '你是一个有用的AI助手�?, catchphrase: '', opening: '', model: '', temperature: 70 },
-  { id: '2', name: '编程专家', avatar: '👨‍�?, prompt: '你是一个资深程序员，用中文回答技术问题�?, catchphrase: '', opening: '', model: '', temperature: 50 },
-  { id: '3', name: '翻译�?, avatar: '🌐', prompt: '你是一个翻译官，帮我把任何语言翻译成中文�?, catchphrase: '', opening: '', model: '', temperature: 30 },
+  { id: '1', name: '通用助手', avatar: '🤖', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70 },
+  { id: '2', name: '编程专家', avatar: '👨‍💻', prompt: '你是一个资深程序员，用中文回答技术问题。', catchphrase: '', opening: '', model: '', temperature: 50 },
+  { id: '3', name: '翻译官', avatar: '🌐', prompt: '你是一个翻译官，帮我把任何语言翻译成中文。', catchphrase: '', opening: '', model: '', temperature: 30 },
 ];
 
-const TEMP_LABELS = ['极精�?, '很精�?, '较精�?, '微偏�?, '适中', '微偏�?, '偏高', '很创�?, '极创�?];
+const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
 const APP_VERSION_CODE = 12;
@@ -96,9 +96,9 @@ export default function App() {
 
   function buildMessages(msgList) {
     let prompt = currentRole.prompt;
-    if (currentRole.catchphrase) prompt += '\n\n你的口头禅是�? + currentRole.catchphrase;
+    if (currentRole.catchphrase) prompt += '\n\n你的口头禅是：' + currentRole.catchphrase;
     if (currentRole.opening) prompt += '\n\n每次对话的开场白是：' + currentRole.opening;
-    if (config.workDir) prompt += '\n\n你可以使用以下标签操作本地文件（工作目录�? + config.workDir + '，路径使用相对于此目录的相对路径）：\n<file_read>相对路径</file_read> �?读取文件内容\n<file_write>相对路径</file_write>文件内容<file_write_end> �?写入/覆盖文件\n<file_list>相对路径</file_list> �?列出目录内容（不填则列根）\n标签必须单独成行使用�?;
+    if (config.workDir) prompt += '\n\n你可以使用以下标签操作本地文件（工作目录：' + config.workDir + '，路径使用相对于此目录的相对路径）：\n<file_read>相对路径</file_read> — 读取文件内容\n<file_write>相对路径</file_write>文件内容<file_write_end> — 写入/覆盖文件\n<file_list>相对路径</file_list> — 列出目录内容（不填则列根）\n标签必须单独成行使用。';
     return [{ role: 'system', content: prompt }, ...msgList.slice(0, -1).map(m => ({ role: m.role, content: m.content }))];
   }
 
@@ -122,7 +122,7 @@ export default function App() {
         const target = path ? matchDir(path) : workDir;
         const list = await ReactNativeBlobUtil.fs.ls(target);
         result = result.replace(m[0], '📁 ' + (path || '/') + ' 下的文件：\n' + list.join('\n'));
-      } catch (e) { result = result.replace(m[0], '�?列表失败: ' + e.message); }
+      } catch (e) { result = result.replace(m[0], '❌ 列表失败: ' + e.message); }
     }
 
     // <file_read>
@@ -133,7 +133,7 @@ export default function App() {
         const target = matchDir(path);
         const data = await ReactNativeBlobUtil.fs.readFile(target, 'utf8');
         result = result.replace(m[0], '📄 ' + path + ' 内容：\n```\n' + data + '\n```');
-      } catch (e) { result = result.replace(m[0], '�?读取失败: ' + e.message); }
+      } catch (e) { result = result.replace(m[0], '❌ 读取失败: ' + e.message); }
     }
 
     // <file_write>content<file_write_end>
@@ -143,8 +143,8 @@ export default function App() {
         const path = m[1].trim();
         const target = matchDir(path);
         await ReactNativeBlobUtil.fs.writeFile(target, m[2].trim(), 'utf8');
-        result = result.replace(m[0], '�?已写�?' + path);
-      } catch (e) { result = result.replace(m[0], '�?写入失败: ' + e.message); }
+        result = result.replace(m[0], '✅ 已写入 ' + path);
+      } catch (e) { result = result.replace(m[0], '❌ 写入失败: ' + e.message); }
     }
 
     return result;
@@ -259,7 +259,7 @@ export default function App() {
           const next = [...prev];
           const last = next[next.length - 1];
           if (last && last.role === 'assistant') {
-            next[next.length - 1] = { ...last, content: last.content || '(已停�?' };
+            next[next.length - 1] = { ...last, content: last.content || '(已停止)' };
           }
           return next;
         });
@@ -274,14 +274,14 @@ export default function App() {
 
   function clearMessages() {
     if (messages.length === 0) return;
-    Alert.alert('确认', '清空当前对话�?, [
+    Alert.alert('确认', '清空当前对话？', [
       { text: '取消', style: 'cancel' },
       { text: '清空', style: 'destructive', onPress: () => setMessages([]) },
     ]);
   }
 
   async function fetchModels() {
-    if (!config.baseUrl || !config.apiKey) { Alert.alert('提示', '请先填写 API 地址�?Key'); return; }
+    if (!config.baseUrl || !config.apiKey) { Alert.alert('提示', '请先填写 API 地址和 Key'); return; }
     setLoadingModels(true);
     try {
       const url = config.baseUrl.replace(/\/+$/, '') + '/models';
@@ -320,10 +320,10 @@ export default function App() {
       const parsed = JSON.parse(content);
       const arr = Array.isArray(parsed) ? parsed : [parsed];
       const valid = arr.filter(function(r) { return r.name || r.prompt; });
-      if (valid.length === 0) { Alert.alert('错误', '未找到有效角色数�?); return; }
-      const imported = valid.map(function(r, i) { return { id: (Date.now() + i).toString(), name: r.name || '未命�?, avatar: r.avatar || '🤖', prompt: r.prompt || '', catchphrase: r.catchphrase || '', opening: r.opening || '', model: r.model || '', temperature: r.temperature !== undefined && r.temperature !== null ? r.temperature : 70 }; });
+      if (valid.length === 0) { Alert.alert('错误', '未找到有效角色数据'); return; }
+      const imported = valid.map(function(r, i) { return { id: (Date.now() + i).toString(), name: r.name || '未命名', avatar: r.avatar || '🤖', prompt: r.prompt || '', catchphrase: r.catchphrase || '', opening: r.opening || '', model: r.model || '', temperature: r.temperature !== undefined && r.temperature !== null ? r.temperature : 70 }; });
       setRoles(function(prev) { return prev.concat(imported); });
-      Alert.alert('成功', '导入�?' + valid.length + ' 个角�?);
+      Alert.alert('成功', '导入了 ' + valid.length + ' 个角色');
     } catch (e) { Alert.alert('导入失败', e.message); }
   }
 
@@ -333,12 +333,12 @@ export default function App() {
       if (!res.ok) return;
       const data = await res.json();
       if (data.versionCode > APP_VERSION_CODE) {
-        Alert.alert('发现新版�?' + data.versionName, data.note + '\n\n是否下载更新�?, [
+        Alert.alert('发现新版本 ' + data.versionName, data.note + '\n\n是否下载更新？', [
           { text: '稍后', style: 'cancel' },
           { text: '下载', onPress: () => downloadUpdate(data.url) },
         ]);
       } else {
-        Alert.alert('已是最新版�?, '当前版本 v' + APP_VERSION_NAME);
+        Alert.alert('已是最新版本', '当前版本 v' + APP_VERSION_NAME);
       }
     } catch {}
   }
@@ -362,17 +362,17 @@ export default function App() {
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           <Text style={{ marginBottom: 4 }}>名称</Text>
           <TextInput style={s.input} value={editName} onChangeText={setEditName} />
-          <Text style={{ marginBottom: 4 }}>头像（Emoji�?/Text>
+          <Text style={{ marginBottom: 4 }}>头像（Emoji）</Text>
           <TextInput style={s.input} value={editAvatar} onChangeText={setEditAvatar} placeholder="🤖" />
-          <Text style={{ marginBottom: 4 }}>系统提示�?/Text>
+          <Text style={{ marginBottom: 4 }}>系统提示词</Text>
           <TextInput style={[s.input, { height: 80 }]} value={editPrompt} onChangeText={setEditPrompt} multiline />
           <Text style={{ marginBottom: 4 }}>口头禅（可选）</Text>
           <TextInput style={s.input} value={editCatchphrase} onChangeText={setEditCatchphrase} placeholder="原来如此..." />
           <Text style={{ marginBottom: 4 }}>开场白（可选）</Text>
-          <TextInput style={s.input} value={editOpening} onChangeText={setEditOpening} placeholder="你好，我�?.." />
-          <Text style={{ marginBottom: 4 }}>模型（留空使用全局�?/Text>
+          <TextInput style={s.input} value={editOpening} onChangeText={setEditOpening} placeholder="你好，我是..." />
+          <Text style={{ marginBottom: 4 }}>模型（留空使用全局）</Text>
           <TextInput style={s.input} value={editModel} onChangeText={setEditModel} placeholder={config.model} />
-          <Text style={{ marginBottom: 4 }}>思考程�? {TEMP_LABELS[Math.min(Math.round(editTemp / 10), 8)] || '适中'}</Text>
+          <Text style={{ marginBottom: 4 }}>思考程度: {TEMP_LABELS[Math.min(Math.round(editTemp / 10), 8)] || '适中'}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ fontSize: 12, color: '#999' }}>精确</Text>
             <View style={{ flex: 1, height: 4, backgroundColor: '#e0e0e0', borderRadius: 2 }}>
@@ -393,7 +393,7 @@ export default function App() {
               <Text>取消</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => {
-              if (!editName.trim()) { Alert.alert('提示', '请输入名�?); return; }
+              if (!editName.trim()) { Alert.alert('提示', '请输入名称'); return; }
               setRoles(prev => prev.map(r => r.id === editRole.id ? { ...r, name: editName.trim(), avatar: editAvatar.trim() || '🤖', prompt: editPrompt.trim(), catchphrase: editCatchphrase.trim(), opening: editOpening.trim(), model: editModel.trim(), temperature: editTemp } : r));
               setEditRole(null);
             }} style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#e94560', alignItems: 'center' }}>
@@ -401,8 +401,8 @@ export default function App() {
             </TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => {
-            if (roles.length <= 1) { Alert.alert('提示', '至少保留一个角�?); return; }
-            Alert.alert('确认', '删除角色�? + editRole.name + '」？', [
+            if (roles.length <= 1) { Alert.alert('提示', '至少保留一个角色'); return; }
+            Alert.alert('确认', '删除角色「' + editRole.name + '」？', [
               { text: '取消', style: 'cancel' },
               { text: '删除', style: 'destructive', onPress: () => {
                 const idx = roles.findIndex(r => r.id === editRole.id);
@@ -412,7 +412,7 @@ export default function App() {
               }},
             ]);
           }} style={{ padding: 12, marginTop: 12, alignItems: 'center' }}>
-            <Text style={{ color: '#e94560' }}>删除此角�?/Text>
+            <Text style={{ color: '#e94560' }}>删除此角色</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -423,20 +423,20 @@ export default function App() {
         <StatusBar barStyle="dark-content" />
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee' }}>
           <TouchableOpacity onPress={() => { setNeedsSetup(false); setShowSettings(false); }} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ color: '#e94560', fontSize: 15 }}>�?返回</Text>
+            <Text style={{ color: '#e94560', fontSize: 15 }}>← 返回</Text>
           </TouchableOpacity>
           <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '600', marginRight: 50 }}>设置</Text>
         </View>
         <ScrollView style={{ padding: 20 }} contentContainerStyle={{ paddingBottom: 60 }}>
-          <Text style={{ fontSize: 14, color: '#e94560', fontWeight: '600', marginBottom: 10 }}>选择供应�?/Text>
+          <Text style={{ fontSize: 14, color: '#e94560', fontWeight: '600', marginBottom: 10 }}>选择供应商</Text>
           <TouchableOpacity onPress={() => { setProviderSearch(''); setShowProviderList(true); }}
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#f5f5f5', marginBottom: 16 }}>
-            <Text style={{ fontSize: 14, color: '#333' }}>{PROVIDERS.find(p => p.url === config.baseUrl)?.name || '自定�?}</Text>
-            <Text style={{ color: '#e94560', fontSize: 12 }}>切换 �?/Text>
+            <Text style={{ fontSize: 14, color: '#333' }}>{PROVIDERS.find(p => p.url === config.baseUrl)?.name || '自定义'}</Text>
+            <Text style={{ color: '#e94560', fontSize: 12 }}>切换 ▾</Text>
           </TouchableOpacity>
           {showProviderList && (
             <View style={{ maxHeight: 250, borderWidth: 1, borderColor: '#eee', borderRadius: 8, marginBottom: 16, marginTop: -8 }}>
-              <TextInput style={{ padding: 8, borderBottomWidth: 1, borderColor: '#eee', fontSize: 13 }} placeholder="搜索供应�?.." value={providerSearch} onChangeText={setProviderSearch} />
+              <TextInput style={{ padding: 8, borderBottomWidth: 1, borderColor: '#eee', fontSize: 13 }} placeholder="搜索供应商..." value={providerSearch} onChangeText={setProviderSearch} />
               <ScrollView nestedScrollEnabled>
                 {PROVIDERS.filter(p => !providerSearch || p.name.includes(providerSearch) || p.url.includes(providerSearch)).map(p => (
                   <TouchableOpacity key={p.name} onPress={() => { setConfig({ ...config, baseUrl: p.url, model: p.model }); setShowProviderList(false); }}
@@ -490,7 +490,7 @@ export default function App() {
             </View>
           )}
           <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 16 }} />
-          <Text style={{ marginBottom: 4 }}>工作目录（让 AI 读写文件�?/Text>
+          <Text style={{ marginBottom: 4 }}>工作目录（让 AI 读写文件）</Text>
           <TextInput style={s.input} value={config.workDir} onChangeText={v => setConfig({ ...config, workDir: v })} placeholder="例如: /storage/emulated/0" />
           <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 16 }} />
           <Text style={{ marginBottom: 4 }}>聊天背景</Text>
@@ -506,7 +506,7 @@ export default function App() {
           </View>
           <View style={{ height: 1, backgroundColor: '#eee', marginVertical: 16 }} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <Text>显示思考过�?/Text>
+            <Text>显示思考过程</Text>
             <Switch value={config.showThinking} onValueChange={v => setConfig({ ...config, showThinking: v })} trackColor={{ false: '#ddd', true: '#e94560' }} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -515,9 +515,9 @@ export default function App() {
           </View>
           <TouchableOpacity onPress={checkForUpdate}
             style={{ padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e94560', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: '#e94560', fontWeight: '600' }}>🔄 检查更�?(v{APP_VERSION_NAME})</Text>
+            <Text style={{ color: '#e94560', fontWeight: '600' }}>🔄 检查更新 (v{APP_VERSION_NAME})</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { if (!config.apiKey.trim()) { Alert.alert('提示', '请输�?API Key'); return; } setNeedsSetup(false); setShowSettings(false); }}
+          <TouchableOpacity onPress={() => { if (!config.apiKey.trim()) { Alert.alert('提示', '请输入 API Key'); return; } setNeedsSetup(false); setShowSettings(false); }}
             style={{ backgroundColor: '#e94560', padding: 14, borderRadius: 10, alignItems: 'center' }}>
             <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>保存设置</Text>
           </TouchableOpacity>
@@ -529,16 +529,16 @@ export default function App() {
       <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 280, backgroundColor: '#fff', zIndex: 100, elevation: 10, paddingTop: 50, shadowColor: '#000', shadowOffset: { width: 2, height: 0 }, shadowOpacity: 0.1, shadowRadius: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: '#eee' }}>
           <Text style={{ fontSize: 17, fontWeight: '600' }}>选择角色</Text>
-          <TouchableOpacity onPress={() => setShowRoles(false)}><Text style={{ color: '#e94560', fontSize: 18 }}>�?/Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowRoles(false)}><Text style={{ color: '#e94560', fontSize: 18 }}>✕</Text></TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => {
-          const newRole = { id: Date.now().toString(), name: '新角�?, avatar: '🧑', prompt: '你是一个有用的AI助手�?, catchphrase: '', opening: '', model: '', temperature: 70 };
+          const newRole = { id: Date.now().toString(), name: '新角色', avatar: '🧑', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70 };
           setRoles(prev => [...prev, newRole]);
           setEditRole(newRole);
-          setEditName('新角�?); setEditAvatar('🧑'); setEditPrompt('你是一个有用的AI助手�?);
+          setEditName('新角色'); setEditAvatar('🧑'); setEditPrompt('你是一个有用的AI助手。');
           setEditCatchphrase(''); setEditOpening(''); setEditModel(''); setEditTemp(70);
         }} style={{ margin: 12, backgroundColor: '#e94560', padding: 12, borderRadius: 10, alignItems: 'center' }}>
-          <Text style={{ color: '#fff', fontWeight: '600' }}>�?新建角色</Text>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>＋ 新建角色</Text>
         </TouchableOpacity>
         <FlatList
           data={roles}
@@ -575,7 +575,7 @@ export default function App() {
           <StatusBar barStyle="dark-content" />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee', backgroundColor: '#fff' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TouchableOpacity onPress={() => setShowRoles(true)} style={{ padding: 6, backgroundColor: '#f0f0f0', borderRadius: 8 }}><Text style={{ fontSize: 20 }}>�?/Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowRoles(true)} style={{ padding: 6, backgroundColor: '#f0f0f0', borderRadius: 8 }}><Text style={{ fontSize: 20 }}>☰</Text></TouchableOpacity>
             <Text style={{ fontSize: 22 }}>{currentRole?.avatar || '🤖'}</Text>
             <View>
               <Text style={{ fontSize: 16, fontWeight: '600' }}>{currentRole?.name || 'AI Chat'}</Text>
@@ -603,7 +603,7 @@ export default function App() {
                     {config.showThinking && item.reasoning && (
                       <View style={{ backgroundColor: '#f8f9fa', borderLeftWidth: 3, borderLeftColor: '#e94560', borderRadius: 8, marginBottom: 6 }}>
                         <TouchableOpacity onPress={() => setShowThinkingBox(!showThinkingBox)} style={{ padding: 8 }}>
-                          <Text style={{ fontSize: 12, color: '#e94560', fontWeight: '500' }}>💭 已思�?/Text>
+                          <Text style={{ fontSize: 12, color: '#e94560', fontWeight: '500' }}>💭 已思考</Text>
                         </TouchableOpacity>
                         {showThinkingBox && (
                           <Text style={{ padding: 8, paddingTop: 0, fontSize: 13, color: '#666', lineHeight: 18 }}>{item.reasoning}</Text>
@@ -642,12 +642,12 @@ export default function App() {
           {loading ? (
             <TouchableOpacity onPress={stopGeneration}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#666', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>�?/Text>
+              <Text style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold' }}>■</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={sendMessage}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: '#e94560', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFF', fontSize: 18 }}>�?/Text>
+              <Text style={{ color: '#FFF', fontSize: 18 }}>→</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -667,4 +667,3 @@ const s = {
     borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10, padding: 12, fontSize: 14, marginBottom: 12, backgroundColor: '#f5f5f5',
   },
 };
-
