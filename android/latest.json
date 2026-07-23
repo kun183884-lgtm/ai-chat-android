@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.20/AIChat-v2.20.apk",
-    "versionCode":  22,
-    "versionName":  "2.20",
-    "note":  "自动滚动到底部；角色按最后使用排序；头像支持图片URL"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.21/AIChat-v2.21.apk",
+    "versionCode":  23,
+    "versionName":  "2.21",
+    "note":  "本地图片选为头像；角色完整会话导出/导入（含对话记录）"
 }

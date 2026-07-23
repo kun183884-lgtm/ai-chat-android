@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 22;
-const APP_VERSION_NAME = '2.20';
+const APP_VERSION_CODE = 23;
+const APP_VERSION_NAME = '2.21';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -358,6 +358,41 @@ export default function App() {
     } catch (e) { Alert.alert('导入失败', e.message); }
   }
 
+  async function exportRoleWithMessages(role) {
+    try {
+      const msgs = await AsyncStorage.getItem('msg_' + role.id).then(v => v ? JSON.parse(v) : []);
+      const data = JSON.stringify({ role, messages: msgs }, null, 2);
+      const filePath = ReactNativeBlobUtil.fs.dirs.DownloadDir + '/AI角色_' + role.name + '_' + Date.now() + '.json';
+      await ReactNativeBlobUtil.fs.writeFile(filePath, data, 'utf8');
+      Alert.alert('导出成功', '已保存到: ' + filePath, [
+        { text: '好的' },
+        { text: '分享', onPress: async () => {
+          try {
+            const uri = Platform.OS === 'android' ? 'content://' + filePath : filePath;
+            await Share.share({ url: uri, title: 'AI Chat 角色 - ' + role.name });
+          } catch {}
+        }},
+      ]);
+    } catch (e) { Alert.alert('导出失败', e.message); }
+  }
+
+  async function importRoleWithMessages() {
+    try {
+      const result = await pick({ type: ['application/json'], allowMultiSelection: false });
+      if (!result || result.length === 0) return;
+      const uri = decodeURIComponent(result[0].uri);
+      const content = await ReactNativeBlobUtil.fs.readFile(uri, 'utf8');
+      const parsed = JSON.parse(content);
+      if (!parsed.role || !parsed.role.name) { Alert.alert('错误', '文件格式不正确'); return; }
+      const newRole = { ...parsed.role, id: Date.now().toString(), lastUsed: 0 };
+      setRoles(prev => [...prev, newRole]);
+      if (parsed.messages && parsed.messages.length > 0) {
+        await AsyncStorage.setItem('msg_' + newRole.id, JSON.stringify(parsed.messages));
+      }
+      Alert.alert('成功', '已导入角色「' + newRole.name + '」' + (parsed.messages ? '（含' + parsed.messages.length + '条对话）' : ''));
+    } catch (e) { Alert.alert('导入失败', e.message); }
+  }
+
   async function checkForUpdate() {
     if (checkingUpdate) return;
     setCheckingUpdate(true);
@@ -399,8 +434,23 @@ export default function App() {
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           <Text style={{ marginBottom: 4 }}>名称</Text>
           <TextInput style={s.input} value={editName} onChangeText={setEditName} />
-          <Text style={{ marginBottom: 4 }}>头像（Emoji 或图片 URL）</Text>
-          <TextInput style={s.input} value={editAvatar} onChangeText={setEditAvatar} placeholder="🤖 或 https://..." />
+          <Text style={{ marginBottom: 4 }}>头像（Emoji 或本地图片）</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TextInput style={[s.input, { flex: 1 }]} value={editAvatar} onChangeText={setEditAvatar} placeholder="🤖" />
+            <TouchableOpacity onPress={async () => {
+              try {
+                const result = await pick({ type: ['image/*'], allowMultiSelection: false });
+                if (result && result.length > 0) {
+                  const uri = decodeURIComponent(result[0].uri);
+                  const dest = ReactNativeBlobUtil.fs.dirs.DocumentDir + '/avatars/' + Date.now() + '.jpg';
+                  await ReactNativeBlobUtil.fs.cp(uri, dest);
+                  setEditAvatar('file://' + dest);
+                }
+              } catch (e) { Alert.alert('选择图片失败', e.message); }
+            }} style={{ padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e94560', justifyContent: 'center' }}>
+              <Text style={{ color: '#e94560', fontSize: 13 }}>选择图片</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={{ marginBottom: 4 }}>系统提示词</Text>
           <TextInput style={[s.input, { height: 80 }]} value={editPrompt} onChangeText={setEditPrompt} multiline />
           <Text style={{ marginBottom: 4 }}>口头禅（可选）</Text>
@@ -585,6 +635,9 @@ export default function App() {
               style={{ flexDirection: 'row', alignItems: 'center', padding: 12, marginHorizontal: 8, borderRadius: 8, marginBottom: 2, backgroundColor: item.id === currentRoleId ? '#fff0f0' : 'transparent' }}>
               {isImageAvatar(item.avatar) ? <Image source={{ uri: item.avatar }} style={{ width: 24, height: 24, borderRadius: 12, marginRight: 10 }} /> : <Text style={{ fontSize: 18, marginRight: 10 }}>{item.avatar || '🤖'}</Text>}
               <Text style={{ flex: 1, fontSize: 14, fontWeight: item.id === currentRoleId ? '600' : '400' }}>{item.name}</Text>
+              <TouchableOpacity onPress={() => exportRoleWithMessages(item)} style={{ padding: 4, marginRight: 4 }}>
+                <Text style={{ color: '#999', fontSize: 13 }}>📤</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => {
                 setEditRole(item);
                 setEditName(item.name); setEditAvatar(item.avatar || '🤖'); setEditPrompt(item.prompt);
@@ -596,10 +649,13 @@ export default function App() {
         />
         <View style={{ flexDirection: 'row', borderTopWidth: 1, borderColor: '#eee', padding: 12 }}>
           <TouchableOpacity onPress={exportRoles} style={{ flex: 1, padding: 10, alignItems: 'center' }}>
-            <Text style={{ color: '#e94560', fontWeight: '600' }}>📤 导出角色</Text>
+            <Text style={{ color: '#e94560', fontWeight: '600' }}>📤 导出全部</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={importRoles} style={{ flex: 1, padding: 10, alignItems: 'center' }}>
             <Text style={{ color: '#e94560', fontWeight: '600' }}>📥 导入角色</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={importRoleWithMessages} style={{ flex: 1, padding: 10, alignItems: 'center' }}>
+            <Text style={{ color: '#e94560', fontWeight: '600' }}>📥 导入含对话</Text>
           </TouchableOpacity>
         </View>
       </View>
