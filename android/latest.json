@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.15/AIChat-v2.15.apk",
-    "versionCode":  17,
-    "versionName":  "2.15",
-    "note":  "新增 open_url 标签; open_app 支持中文应用名"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.16/AIChat-v2.16.apk",
+    "versionCode":  18,
+    "versionName":  "2.16",
+    "note":  "移除手机功能标签（set_alarm/make_call/send_sms/open_app/open_url）修复网络错误问题"
 }

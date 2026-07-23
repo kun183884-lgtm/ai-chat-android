@@ -82,8 +82,8 @@ android {
         applicationId "com.aichat"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "2.15"
+        versionCode 18
+        versionName "2.16"
     }
     signingConfigs {
         debug {
