@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.19/AIChat-v2.19.apk",
-    "versionCode":  21,
-    "versionName":  "2.19",
-    "note":  "修复 AsyncStorage multiGet 不兼容；改用 Promise.all + getItem"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.20/AIChat-v2.20.apk",
+    "versionCode":  22,
+    "versionName":  "2.20",
+    "note":  "自动滚动到底部；角色按最后使用排序；头像支持图片URL"
 }

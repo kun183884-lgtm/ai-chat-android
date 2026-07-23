@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, StatusBar, Switch, KeyboardAvoidingView, Platform, Share, Linking, BackHandler, ToastAndroid } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, StatusBar, Switch, KeyboardAvoidingView, Platform, Share, Linking, BackHandler, ToastAndroid, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import { pick } from '@react-native-documents/picker';
@@ -13,16 +13,16 @@ const PROVIDERS = [
 ];
 
 const defaultRoles = [
-  { id: '1', name: '通用助手', avatar: '🤖', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70 },
-  { id: '2', name: '编程专家', avatar: '👨‍💻', prompt: '你是一个资深程序员，用中文回答技术问题。', catchphrase: '', opening: '', model: '', temperature: 50 },
-  { id: '3', name: '翻译官', avatar: '🌐', prompt: '你是一个翻译官，帮我把任何语言翻译成中文。', catchphrase: '', opening: '', model: '', temperature: 30 },
+  { id: '1', name: '通用助手', avatar: '🤖', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70, lastUsed: 0 },
+  { id: '2', name: '编程专家', avatar: '👨‍💻', prompt: '你是一个资深程序员，用中文回答技术问题。', catchphrase: '', opening: '', model: '', temperature: 50, lastUsed: 0 },
+  { id: '3', name: '翻译官', avatar: '🌐', prompt: '你是一个翻译官，帮我把任何语言翻译成中文。', catchphrase: '', opening: '', model: '', temperature: 30, lastUsed: 0 },
 ];
 
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 21;
-const APP_VERSION_NAME = '2.19';
+const APP_VERSION_CODE = 22;
+const APP_VERSION_NAME = '2.20';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -58,6 +58,8 @@ export default function App() {
   const abortRef = useRef(null);
   const prevRole = useRef(currentRoleId);
   const startTimeRef = useRef(0);
+  const scrollRef = useRef(null);
+  const isImageAvatar = (a) => a && (a.startsWith('http') || a.startsWith('file://') || a.startsWith('content://'));
 
   useEffect(() => {
     Promise.all([
@@ -114,6 +116,13 @@ export default function App() {
   useEffect(() => { if (loadedStorage.current) AsyncStorage.setItem('currentRoleId', currentRoleId); }, [currentRoleId]);
 
   const currentRole = roles.find(r => r.id === currentRoleId) || roles[0];
+  const sortedRoles = [...roles].sort((a, b) => (b.lastUsed || 0) - (a.lastUsed || 0));
+
+  useEffect(() => {
+    if (scrollRef.current && messages.length > 0) {
+      setTimeout(() => scrollRef.current.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages]);
 
   function buildMessages(msgList) {
     let prompt = currentRole.prompt;
@@ -343,7 +352,7 @@ export default function App() {
       const arr = Array.isArray(parsed) ? parsed : [parsed];
       const valid = arr.filter(function(r) { return r.name || r.prompt; });
       if (valid.length === 0) { Alert.alert('错误', '未找到有效角色数据'); return; }
-      const imported = valid.map(function(r, i) { return { id: (Date.now() + i).toString(), name: r.name || '未命名', avatar: r.avatar || '🤖', prompt: r.prompt || '', catchphrase: r.catchphrase || '', opening: r.opening || '', model: r.model || '', temperature: r.temperature !== undefined && r.temperature !== null ? r.temperature : 70 }; });
+      const imported = valid.map(function(r, i) { return { id: (Date.now() + i).toString(), name: r.name || '未命名', avatar: r.avatar || '🤖', prompt: r.prompt || '', catchphrase: r.catchphrase || '', opening: r.opening || '', model: r.model || '', temperature: r.temperature !== undefined && r.temperature !== null ? r.temperature : 70, lastUsed: 0 }; });
       setRoles(function(prev) { return prev.concat(imported); });
       Alert.alert('成功', '导入了 ' + valid.length + ' 个角色');
     } catch (e) { Alert.alert('导入失败', e.message); }
@@ -390,8 +399,8 @@ export default function App() {
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           <Text style={{ marginBottom: 4 }}>名称</Text>
           <TextInput style={s.input} value={editName} onChangeText={setEditName} />
-          <Text style={{ marginBottom: 4 }}>头像（Emoji）</Text>
-          <TextInput style={s.input} value={editAvatar} onChangeText={setEditAvatar} placeholder="🤖" />
+          <Text style={{ marginBottom: 4 }}>头像（Emoji 或图片 URL）</Text>
+          <TextInput style={s.input} value={editAvatar} onChangeText={setEditAvatar} placeholder="🤖 或 https://..." />
           <Text style={{ marginBottom: 4 }}>系统提示词</Text>
           <TextInput style={[s.input, { height: 80 }]} value={editPrompt} onChangeText={setEditPrompt} multiline />
           <Text style={{ marginBottom: 4 }}>口头禅（可选）</Text>
@@ -422,7 +431,7 @@ export default function App() {
             </TouchableOpacity>
             <TouchableOpacity onPress={() => {
               if (!editName.trim()) { Alert.alert('提示', '请输入名称'); return; }
-              setRoles(prev => prev.map(r => r.id === editRole.id ? { ...r, name: editName.trim(), avatar: editAvatar.trim() || '🤖', prompt: editPrompt.trim(), catchphrase: editCatchphrase.trim(), opening: editOpening.trim(), model: editModel.trim(), temperature: editTemp } : r));
+              setRoles(prev => prev.map(r => r.id === editRole.id ? { ...r, name: editName.trim(), avatar: editAvatar.trim() || '🤖', prompt: editPrompt.trim(), catchphrase: editCatchphrase.trim(), opening: editOpening.trim(), model: editModel.trim(), temperature: editTemp, lastUsed: r.lastUsed || 0 } : r));
               setEditRole(null);
             }} style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: '#e94560', alignItems: 'center' }}>
               <Text style={{ color: '#FFF' }}>保存</Text>
@@ -560,7 +569,7 @@ export default function App() {
           <TouchableOpacity onPress={() => setShowRoles(false)}><Text style={{ color: '#e94560', fontSize: 18 }}>✕</Text></TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => {
-          const newRole = { id: Date.now().toString(), name: '新角色', avatar: '🧑', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70 };
+          const newRole = { id: Date.now().toString(), name: '新角色', avatar: '🧑', prompt: '你是一个有用的AI助手。', catchphrase: '', opening: '', model: '', temperature: 70, lastUsed: 0 };
           setRoles(prev => [...prev, newRole]);
           setEditRole(newRole);
           setEditName('新角色'); setEditAvatar('🧑'); setEditPrompt('你是一个有用的AI助手。');
@@ -569,12 +578,12 @@ export default function App() {
           <Text style={{ color: '#fff', fontWeight: '600' }}>＋ 新建角色</Text>
         </TouchableOpacity>
         <FlatList
-          data={roles}
+          data={sortedRoles}
           keyExtractor={r => r.id}
           renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => { setCurrentRoleId(item.id); setShowRoles(false); }}
+            <TouchableOpacity onPress={() => { setCurrentRoleId(item.id); setRoles(prev => prev.map(r => r.id === item.id ? { ...r, lastUsed: Date.now() } : r)); setShowRoles(false); }}
               style={{ flexDirection: 'row', alignItems: 'center', padding: 12, marginHorizontal: 8, borderRadius: 8, marginBottom: 2, backgroundColor: item.id === currentRoleId ? '#fff0f0' : 'transparent' }}>
-              <Text style={{ fontSize: 18, marginRight: 10 }}>{item.avatar || '🤖'}</Text>
+              {isImageAvatar(item.avatar) ? <Image source={{ uri: item.avatar }} style={{ width: 24, height: 24, borderRadius: 12, marginRight: 10 }} /> : <Text style={{ fontSize: 18, marginRight: 10 }}>{item.avatar || '🤖'}</Text>}
               <Text style={{ flex: 1, fontSize: 14, fontWeight: item.id === currentRoleId ? '600' : '400' }}>{item.name}</Text>
               <TouchableOpacity onPress={() => {
                 setEditRole(item);
@@ -604,7 +613,7 @@ export default function App() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee', backgroundColor: '#fff' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <TouchableOpacity onPress={() => setShowRoles(true)} style={{ padding: 6, backgroundColor: '#f0f0f0', borderRadius: 8 }}><Text style={{ fontSize: 20 }}>☰</Text></TouchableOpacity>
-            <Text style={{ fontSize: 22 }}>{currentRole?.avatar || '🤖'}</Text>
+            {isImageAvatar(currentRole?.avatar) ? <Image source={{ uri: currentRole.avatar }} style={{ width: 28, height: 28, borderRadius: 14 }} /> : <Text style={{ fontSize: 22 }}>{currentRole?.avatar || '🤖'}</Text>}
             <View>
               <Text style={{ fontSize: 16, fontWeight: '600' }}>{currentRole?.name || 'AI Chat'}</Text>
               <Text style={{ fontSize: 11, color: loading ? '#e94560' : '#999' }}>{loading ? '思考中... ' + elapsed + 's' : '空闲'}</Text>
@@ -616,6 +625,7 @@ export default function App() {
           </View>
         </View>
         <FlatList
+          ref={scrollRef}
           style={{ flex: 1 }}
           data={messages}
           keyExtractor={(_, i) => i.toString()}
@@ -623,7 +633,7 @@ export default function App() {
             <View style={{ marginBottom: 10, alignItems: item.role === 'user' ? 'flex-end' : 'flex-start' }}>
               {item.role === 'assistant' && (
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-                  <Text style={{ fontSize: 28 }}>{currentRole?.avatar || '🤖'}</Text>
+                  {isImageAvatar(currentRole?.avatar) ? <Image source={{ uri: currentRole.avatar }} style={{ width: 28, height: 28, borderRadius: 14 }} /> : <Text style={{ fontSize: 28 }}>{currentRole?.avatar || '🤖'}</Text>}
                   <View>
                     <Text style={{ fontSize: 12, color: '#999', marginBottom: 2 }}>
                       {currentRole?.name || 'AI'}{config.showThinkingTime && elapsed > 0 && index === messages.length - 1 ? ' · ' + elapsed + 's' : ''}
