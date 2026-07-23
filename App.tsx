@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, StatusBar, Switch, KeyboardAvoidingView, Platform, Share, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, StatusBar, Switch, KeyboardAvoidingView, Platform, Share, Linking, BackHandler, ToastAndroid } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import { pick } from '@react-native-documents/picker';
@@ -33,7 +33,6 @@ export default function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [needsSetup, setNeedsSetup] = useState(false);
   const [ready, setReady] = useState(false);
   const [showRoles, setShowRoles] = useState(false);
   const [editRole, setEditRole] = useState(null);
@@ -59,7 +58,7 @@ export default function App() {
   const prevRole = useRef(currentRoleId);
   const startTimeRef = useRef(0);
 
-  useEffect(() => { AsyncStorage.getItem('config').then(v => { if (v) try { const p = JSON.parse(v); setConfig(prev => ({ ...prev, ...p })); if (!p.apiKey || !p.baseUrl) setNeedsSetup(true); } catch {} else setNeedsSetup(true); setReady(true); }); }, []);
+  useEffect(() => { AsyncStorage.getItem('config').then(v => { if (v) try { const p = JSON.parse(v); setConfig(prev => ({ ...prev, ...p })); } catch {} setReady(true); }); }, []);
   useEffect(() => { AsyncStorage.getItem('roles').then(v => { if (v) try { setRoles(JSON.parse(v)); } catch {} }); }, []);
 
   useEffect(() => {
@@ -89,6 +88,22 @@ export default function App() {
   }, [loading]);
 
   useEffect(() => { const t = setTimeout(checkForUpdate, 3000); return () => clearTimeout(t); }, []);
+
+  useEffect(() => {
+    let exitCount = 0;
+    const handler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (editRole) { setEditRole(null); return true; }
+      if (showSettings) { setShowSettings(false); return true; }
+      if (exitCount === 0) {
+        exitCount++;
+        ToastAndroid.show('再按一次退出应用', ToastAndroid.SHORT);
+        setTimeout(() => exitCount = 0, 2000);
+        return true;
+      }
+      return false;
+    });
+    return () => handler.remove();
+  }, [editRole, showSettings]);
 
   useEffect(() => { AsyncStorage.setItem('config', JSON.stringify(config)); }, [config]);
   useEffect(() => { AsyncStorage.setItem('roles', JSON.stringify(roles)); }, [roles]);
@@ -424,12 +439,12 @@ export default function App() {
         </ScrollView>
       </View>
     );
-  } else if (needsSetup || showSettings) {
+  } else if (showSettings) {
     content = (
       <View style={{ flex: 1, paddingTop: 50, backgroundColor: '#fff' }}>
         <StatusBar barStyle="dark-content" />
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, borderBottomWidth: 1, borderColor: '#eee' }}>
-          <TouchableOpacity onPress={() => { setNeedsSetup(false); setShowSettings(false); }} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => setShowSettings(false)} style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ color: '#e94560', fontSize: 15 }}>← 返回</Text>
           </TouchableOpacity>
           <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '600', marginRight: 50 }}>设置</Text>
@@ -524,7 +539,7 @@ export default function App() {
             style={{ padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e94560', alignItems: 'center', marginBottom: 12 }}>
             <Text style={{ color: '#e94560', fontWeight: '600' }}>{checkingUpdate ? '检查中...' : '🔄 检查更新 (v' + APP_VERSION_NAME + ')'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { if (!config.apiKey.trim()) { Alert.alert('提示', '请输入 API Key'); return; } setNeedsSetup(false); setShowSettings(false); }}
+          <TouchableOpacity onPress={() => { if (!config.apiKey.trim()) { Alert.alert('提示', '请输入 API Key'); return; } setShowSettings(false); }}
             style={{ backgroundColor: '#e94560', padding: 14, borderRadius: 10, alignItems: 'center' }}>
             <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '600' }}>保存设置</Text>
           </TouchableOpacity>
