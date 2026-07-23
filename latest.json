@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.12/AIChat-v2.12.apk",
-    "versionCode":  14,
-    "versionName":  "2.12",
-    "note":  "跳过首次设置；返回键返回主页；双击退出"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.13/AIChat-v2.13.apk",
+    "versionCode":  15,
+    "versionName":  "2.13",
+    "note":  "移除启动自动检查更新"
 }

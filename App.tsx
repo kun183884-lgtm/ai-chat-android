@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 14;
-const APP_VERSION_NAME = '2.12';
+const APP_VERSION_CODE = 15;
+const APP_VERSION_NAME = '2.13';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -86,8 +86,6 @@ export default function App() {
     }, 100);
     return () => clearInterval(id);
   }, [loading]);
-
-  useEffect(() => { const t = setTimeout(checkForUpdate, 3000); return () => clearTimeout(t); }, []);
 
   useEffect(() => {
     let exitCount = 0;
