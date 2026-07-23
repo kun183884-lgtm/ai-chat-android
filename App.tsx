@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 12;
-const APP_VERSION_NAME = '2.1';
+const APP_VERSION_CODE = 13;
+const APP_VERSION_NAME = '2.11';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -330,7 +330,7 @@ export default function App() {
   async function checkForUpdate() {
     try {
       const res = await fetch(UPDATE_URL + '?t=' + Date.now());
-      if (!res.ok) return;
+      if (!res.ok) { Alert.alert('检查失败', '无法连接更新服务器 (HTTP ' + res.status + ')'); return; }
       const data = await res.json();
       if (data.versionCode > APP_VERSION_CODE) {
         Alert.alert('发现新版本 ' + data.versionName, data.note + '\n\n是否下载更新？', [
@@ -340,7 +340,7 @@ export default function App() {
       } else {
         Alert.alert('已是最新版本', '当前版本 v' + APP_VERSION_NAME);
       }
-    } catch {}
+    } catch (e) { Alert.alert('检查失败', e.message); }
   }
 
   async function downloadUpdate(url) {

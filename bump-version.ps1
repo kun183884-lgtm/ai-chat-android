@@ -9,8 +9,8 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
   }
   if ($line -match 'versionName "(\d+\.\d+)"') {
     $ver = [double]$Matches[1]
-    $newVer = [Math]::Round($ver + 0.1, 1)
-    $lines[$i] = '        versionName "{0:F1}"' -f $newVer
+    $newVer = [Math]::Round($ver + 0.01, 2)
+    $lines[$i] = '        versionName "{0:F2}"' -f $newVer
   }
 }
 
