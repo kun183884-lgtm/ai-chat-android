@@ -357,7 +357,7 @@ export default function App() {
       <View style={{ flex: 1, paddingTop: 50, padding: 20 }}>
         <StatusBar barStyle="dark-content" />
         <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 20 }}>编辑角色</Text>
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           <Text style={{ marginBottom: 4 }}>名称</Text>
           <TextInput style={s.input} value={editName} onChangeText={setEditName} />
           <Text style={{ marginBottom: 4 }}>头像（Emoji）</Text>
@@ -425,7 +425,7 @@ export default function App() {
           </TouchableOpacity>
           <Text style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '600', marginRight: 50 }}>设置</Text>
         </View>
-        <ScrollView style={{ padding: 20 }}>
+        <ScrollView style={{ padding: 20 }} contentContainerStyle={{ paddingBottom: 60 }}>
           <Text style={{ fontSize: 14, color: '#e94560', fontWeight: '600', marginBottom: 10 }}>选择供应商</Text>
           <TouchableOpacity onPress={() => { setProviderSearch(''); setShowProviderList(true); }}
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#f5f5f5', marginBottom: 16 }}>
