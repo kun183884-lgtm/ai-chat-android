@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 18;
-const APP_VERSION_NAME = '2.16';
+const APP_VERSION_CODE = 19;
+const APP_VERSION_NAME = '2.17';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -58,8 +58,19 @@ export default function App() {
   const prevRole = useRef(currentRoleId);
   const startTimeRef = useRef(0);
 
-  useEffect(() => { AsyncStorage.getItem('config').then(v => { if (v) try { const p = JSON.parse(v); setConfig(prev => ({ ...prev, ...p })); } catch {} setReady(true); }); }, []);
-  useEffect(() => { AsyncStorage.getItem('roles').then(v => { if (v) try { setRoles(JSON.parse(v)); } catch {} }); }, []);
+  useEffect(() => {
+    AsyncStorage.multiGet(['config', 'roles', 'currentRoleId']).then(items => {
+      for (const [key, val] of items) {
+        if (!val) continue;
+        try {
+          if (key === 'config') setConfig(prev => ({ ...prev, ...JSON.parse(val) }));
+          else if (key === 'roles') setRoles(JSON.parse(val));
+          else if (key === 'currentRoleId') setCurrentRoleId(val);
+        } catch {}
+      }
+      setReady(true);
+    });
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('msg_' + currentRoleId).then(v => {
@@ -105,6 +116,7 @@ export default function App() {
 
   useEffect(() => { AsyncStorage.setItem('config', JSON.stringify(config)); }, [config]);
   useEffect(() => { AsyncStorage.setItem('roles', JSON.stringify(roles)); }, [roles]);
+  useEffect(() => { AsyncStorage.setItem('currentRoleId', currentRoleId); }, [currentRoleId]);
 
   const currentRole = roles.find(r => r.id === currentRoleId) || roles[0];
 
