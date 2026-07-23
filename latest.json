@@ -1,0 +1,6 @@
+{
+  "versionCode": 9,
+  "versionName": "1.8",
+  "url": "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v1.8/AIChat-v1.8.apk",
+  "note": "新增：OTA自动更新（GitHub Releases）\n新增：余额查询\n新增：文件读写\n新增：实时计时、停止生成\n修复：角色对话独立"
+}
