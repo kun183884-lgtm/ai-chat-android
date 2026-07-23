@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 19;
-const APP_VERSION_NAME = '2.17';
+const APP_VERSION_CODE = 20;
+const APP_VERSION_NAME = '2.18';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -54,6 +54,7 @@ export default function App() {
   const [showProviderList, setShowProviderList] = useState(false);
   const [providerSearch, setProviderSearch] = useState('');
   const loadedMsg = useRef(false);
+  const loadedStorage = useRef(false);
   const abortRef = useRef(null);
   const prevRole = useRef(currentRoleId);
   const startTimeRef = useRef(0);
@@ -68,6 +69,7 @@ export default function App() {
           else if (key === 'currentRoleId') setCurrentRoleId(val);
         } catch {}
       }
+      loadedStorage.current = true;
       setReady(true);
     });
   }, []);
@@ -114,9 +116,9 @@ export default function App() {
     return () => handler.remove();
   }, [editRole, showSettings]);
 
-  useEffect(() => { AsyncStorage.setItem('config', JSON.stringify(config)); }, [config]);
-  useEffect(() => { AsyncStorage.setItem('roles', JSON.stringify(roles)); }, [roles]);
-  useEffect(() => { AsyncStorage.setItem('currentRoleId', currentRoleId); }, [currentRoleId]);
+  useEffect(() => { if (loadedStorage.current) AsyncStorage.setItem('config', JSON.stringify(config)); }, [config]);
+  useEffect(() => { if (loadedStorage.current) AsyncStorage.setItem('roles', JSON.stringify(roles)); }, [roles]);
+  useEffect(() => { if (loadedStorage.current) AsyncStorage.setItem('currentRoleId', currentRoleId); }, [currentRoleId]);
 
   const currentRole = roles.find(r => r.id === currentRoleId) || roles[0];
 
