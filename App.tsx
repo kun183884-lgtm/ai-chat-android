@@ -195,13 +195,14 @@ export default function App() {
           label = '发送短信';
         } else if (act.tag === 'open_app') {
           const pkg = act.attrs.pkg || appPkgs[act.attrs.name] || '';
-          url = 'intent:#Intent;action=android.intent.action.MAIN;package=' + pkg + ';end';
+          const scheme = { 'com.tencent.mm': 'weixin://', 'com.tencent.mobileqq': 'mqq://', 'com.eg.android.AlipayGphone': 'alipays://', 'com.taobao.taobao': 'taobao://' }[pkg];
+          url = scheme || ('intent:#Intent;action=android.intent.action.MAIN;package=' + pkg + ';end');
           label = '打开' + (act.attrs.name || pkg);
         } else if (act.tag === 'open_url') {
           url = act.attrs.url;
           label = '打开链接';
         }
-        const supported = await Linking.canOpenURL(url);
+        const supported = url.startsWith('intent:') || url.startsWith('tel:') || url.startsWith('sms:') || await Linking.canOpenURL(url);
         if (supported) await Linking.openURL(url);
         else label += '（不支持）';
         result = result.replace(m[0], '✅ 已' + label);

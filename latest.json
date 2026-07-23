@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.14/AIChat-v2.14.apk",
-    "versionCode":  16,
-    "versionName":  "2.14",
-    "note":  "AI可调用手机功能：设闹钟、拨号、短信、打开应用"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.15/AIChat-v2.15.apk",
+    "versionCode":  17,
+    "versionName":  "2.15",
+    "note":  "Fix open_app network error; use URL Scheme for common apps"
 }
