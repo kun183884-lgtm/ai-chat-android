@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 16;
-const APP_VERSION_NAME = '2.14';
+const APP_VERSION_CODE = 17;
+const APP_VERSION_NAME = '2.15';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -113,7 +113,7 @@ export default function App() {
     if (currentRole.catchphrase) prompt += '\n\n你的口头禅是：' + currentRole.catchphrase;
     if (currentRole.opening) prompt += '\n\n每次对话的开场白是：' + currentRole.opening;
     if (config.workDir) prompt += '\n\n你可以使用以下标签操作本地文件（工作目录：' + config.workDir + '，路径使用相对于此目录的相对路径）：\n<file_read>相对路径</file_read> — 读取文件内容\n<file_write>相对路径</file_write>文件内容<file_write_end> — 写入/覆盖文件\n<file_list>相对路径</file_list> — 列出目录内容（不填则列根）\n标签必须单独成行使用。';
-    prompt += '\n\n你也可以使用以下标签调用手机功能（标签必须单独成行）：\n<set_alarm hour="7" minute="0" label="起床" /> — 设置闹钟\n<make_call number="13800138000" /> — 打开拨号界面\n<send_sms number="13800138000" text="你好" /> — 打开短信界面\n<open_app pkg="com.android.vending" /> — 打开应用';
+    prompt += '\n\n你也可以使用以下标签调用手机功能（标签必须单独成行）：\n<set_alarm hour="7" minute="0" label="起床" /> — 设置闹钟（仅支持部分系统）\n<make_call number="13800138000" /> — 打开拨号界面\n<send_sms number="13800138000" text="你好" /> — 打开短信界面\n<open_app name="微信" /> — 打开应用（支持：微信 com.tencent.mm、QQ com.tencent.mobileqq、支付宝 com.eg.android.AlipayGphone、淘宝 com.taobao.taobao、抖音 com.ss.android.ugc.aweme）\n<open_url url="weixin://" /> — 通过 URL scheme 打开应用（weixin://、alipays://、mqq://、taobao://）';
     return [{ role: 'system', content: prompt }, ...msgList.slice(0, -1).map(m => ({ role: m.role, content: m.content }))];
   }
 
@@ -168,7 +168,7 @@ export default function App() {
   async function processPhoneActions(content) {
     let result = content;
     const actions = [];
-    const re = /<(set_alarm|make_call|send_sms|open_app)\s+([^/>]*)\/>/g;
+    const re = /<(set_alarm|make_call|send_sms|open_app|open_url)\s+([^/>]*)\/>/g;
     let m;
     while ((m = re.exec(result)) !== null) {
       const tag = m[1];
@@ -177,6 +177,7 @@ export default function App() {
       actions.push({ tag, attrs });
     }
     if (actions.length === 0) return result;
+    const appPkgs = { '微信': 'com.tencent.mm', 'QQ': 'com.tencent.mobileqq', '支付宝': 'com.eg.android.AlipayGphone', '淘宝': 'com.taobao.taobao', '抖音': 'com.ss.android.ugc.aweme', '微博': 'com.sina.weibo', '美团': 'com.sankuai.meituan', '高德地图': 'com.autonavi.minimap', '百度': 'com.baidu.searchbox', '哔哩哔哩': 'tv.danmaku.bili', '钉钉': 'com.alibaba.android.rimet', '京东': 'com.jingdong.app.mall' };
     for (const act of actions) {
       try {
         let url = '';
@@ -184,6 +185,8 @@ export default function App() {
         if (act.tag === 'set_alarm') {
           url = 'intent:#Intent;action=android.intent.action.SET_ALARM;S.android.intent.extra.alarm.HOUR=' + act.attrs.hour + ';S.android.intent.extra.alarm.MINUTES=' + act.attrs.minute + ';S.android.intent.extra.alarm.MESSAGE=' + encodeURIComponent(act.attrs.label || '闹钟') + ';end';
           label = '设置闹钟';
+          const ok = await Linking.canOpenURL(url);
+          if (!ok) { url = 'intent:#Intent;action=android.intent.action.SET_ALARM;end'; }
         } else if (act.tag === 'make_call') {
           url = 'tel:' + act.attrs.number;
           label = '拨号';
@@ -191,8 +194,12 @@ export default function App() {
           url = 'sms:' + act.attrs.number + '?body=' + encodeURIComponent(act.attrs.text || '');
           label = '发送短信';
         } else if (act.tag === 'open_app') {
-          url = 'intent:#Intent;action=android.intent.action.MAIN;package=' + act.attrs.pkg + ';end';
-          label = '打开应用';
+          const pkg = act.attrs.pkg || appPkgs[act.attrs.name] || '';
+          url = 'intent:#Intent;action=android.intent.action.MAIN;package=' + pkg + ';end';
+          label = '打开' + (act.attrs.name || pkg);
+        } else if (act.tag === 'open_url') {
+          url = act.attrs.url;
+          label = '打开链接';
         }
         const supported = await Linking.canOpenURL(url);
         if (supported) await Linking.openURL(url);

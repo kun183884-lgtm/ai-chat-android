@@ -1,0 +1,6 @@
+﻿{
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.15/AIChat-v2.15.apk",
+    "versionCode":  17,
+    "versionName":  "2.15",
+    "note":  "新增 open_url 标签; open_app 支持中文应用名"
+}
