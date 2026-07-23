@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 20;
-const APP_VERSION_NAME = '2.18';
+const APP_VERSION_CODE = 21;
+const APP_VERSION_NAME = '2.19';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -60,18 +60,11 @@ export default function App() {
   const startTimeRef = useRef(0);
 
   useEffect(() => {
-    AsyncStorage.multiGet(['config', 'roles', 'currentRoleId']).then(items => {
-      for (const [key, val] of items) {
-        if (!val) continue;
-        try {
-          if (key === 'config') setConfig(prev => ({ ...prev, ...JSON.parse(val) }));
-          else if (key === 'roles') setRoles(JSON.parse(val));
-          else if (key === 'currentRoleId') setCurrentRoleId(val);
-        } catch {}
-      }
-      loadedStorage.current = true;
-      setReady(true);
-    });
+    Promise.all([
+      AsyncStorage.getItem('config').then(v => { if (v) try { setConfig(prev => ({ ...prev, ...JSON.parse(v) })); } catch {} }),
+      AsyncStorage.getItem('roles').then(v => { if (v) try { setRoles(JSON.parse(v)); } catch {} }),
+      AsyncStorage.getItem('currentRoleId').then(v => { if (v) setCurrentRoleId(v); }),
+    ]).then(() => { loadedStorage.current = true; setReady(true); });
   }, []);
 
   useEffect(() => {
