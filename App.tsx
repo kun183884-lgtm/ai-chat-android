@@ -21,8 +21,8 @@ const defaultRoles = [
 const TEMP_LABELS = ['极精确', '很精确', '较精确', '微偏低', '适中', '微偏高', '偏高', '很创意', '极创意'];
 
 const stripHtml = (text) => text.replace(/<[^>]*>/g, '');
-const APP_VERSION_CODE = 13;
-const APP_VERSION_NAME = '2.11';
+const APP_VERSION_CODE = 14;
+const APP_VERSION_NAME = '2.12';
 const UPDATE_URL = 'https://raw.githubusercontent.com/kun183884-lgtm/ai-chat-android/main/latest.json';
 
 export default function App() {
@@ -49,6 +49,7 @@ export default function App() {
   const [showModelList, setShowModelList] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [thinkingContent, setThinkingContent] = useState('');
   const [showThinkingBox, setShowThinkingBox] = useState(false);
   const [showProviderList, setShowProviderList] = useState(false);
@@ -328,8 +329,13 @@ export default function App() {
   }
 
   async function checkForUpdate() {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
     try {
-      const res = await fetch(UPDATE_URL + '?t=' + Date.now());
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const res = await fetch(UPDATE_URL + '?t=' + Date.now(), { signal: ctrl.signal });
+      clearTimeout(t);
       if (!res.ok) { Alert.alert('检查失败', '无法连接更新服务器 (HTTP ' + res.status + ')'); return; }
       const data = await res.json();
       if (data.versionCode > APP_VERSION_CODE) {
@@ -340,7 +346,8 @@ export default function App() {
       } else {
         Alert.alert('已是最新版本', '当前版本 v' + APP_VERSION_NAME);
       }
-    } catch (e) { Alert.alert('检查失败', e.message); }
+    } catch (e) { Alert.alert('检查失败', '网络超时或无法连接服务器'); }
+    setCheckingUpdate(false);
   }
 
   async function downloadUpdate(url) {
@@ -513,9 +520,9 @@ export default function App() {
             <Text>显示响应时间</Text>
             <Switch value={config.showThinkingTime} onValueChange={v => setConfig({ ...config, showThinkingTime: v })} trackColor={{ false: '#ddd', true: '#e94560' }} />
           </View>
-          <TouchableOpacity onPress={checkForUpdate}
+          <TouchableOpacity onPress={checkForUpdate} disabled={checkingUpdate}
             style={{ padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#e94560', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: '#e94560', fontWeight: '600' }}>🔄 检查更新 (v{APP_VERSION_NAME})</Text>
+            <Text style={{ color: '#e94560', fontWeight: '600' }}>{checkingUpdate ? '检查中...' : '🔄 检查更新 (v' + APP_VERSION_NAME + ')'}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { if (!config.apiKey.trim()) { Alert.alert('提示', '请输入 API Key'); return; } setNeedsSetup(false); setShowSettings(false); }}
             style={{ backgroundColor: '#e94560', padding: 14, borderRadius: 10, alignItems: 'center' }}>

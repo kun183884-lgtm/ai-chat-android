@@ -1,6 +1,6 @@
 ﻿{
-    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.11/AIChat-v2.11.apk",
-    "versionCode":  13,
-    "versionName":  "2.11",
-    "note":  "修复：检查更新增加错误提示；版本改为+0.01递增"
+    "url":  "https://github.com/kun183884-lgtm/ai-chat-android/releases/download/v2.12/AIChat-v2.12.apk",
+    "versionCode":  14,
+    "versionName":  "2.12",
+    "note":  "检查更新增加超时和加载状态"
 }
